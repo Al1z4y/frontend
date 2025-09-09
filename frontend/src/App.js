@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+
+
 
 function App() {
   const [selectedSymptoms, setSelectedSymptoms] = useState(new Set());
@@ -15,22 +17,18 @@ function App() {
   }, []);
 
   const loadSymptomSuggestions = async () => {
-    try {
-      // Replace this with your actual axios call:
-      // const response = await axios.get(`${API_BASE_URL}/symptoms`);
-      // setAvailableSymptoms(response.data.symptoms);
-      
-      // For demo, setting common symptoms
-      setAvailableSymptoms([
-        'headache', 'fever', 'cough', 'fatigue', 'nausea', 'vomiting',
-        'diarrhea', 'abdominal_pain', 'back_pain', 'joint_pain',
-        'muscle_pain', 'dizziness', 'chest_pain', 'shortness_of_breath'
-      ]);
-    } catch (error) {
-      console.error('Error loading symptoms:', error);
-      setError('Failed to load symptoms. Please check if the API is running.');
-    }
-  };
+  try {
+    const response = await fetch(`${API_BASE_URL}/symptoms`);
+    const data = await response.json();
+    setAvailableSymptoms(data.symptoms);
+  } catch (error) {
+    console.error("Error loading symptoms:", error);
+    setError(
+      `Failed to load symptoms. Please check if the API is running at ${API_BASE_URL}`
+    );
+  }
+};
+
 
   const addSymptom = (symptom) => {
     if (selectedSymptoms.has(symptom)) return;
@@ -80,42 +78,38 @@ function App() {
   };
 
   const predictDisease = async () => {
-    if (selectedSymptoms.size === 0) {
-      setError('Please add at least one symptom before predicting.');
-      return;
+  if (selectedSymptoms.size === 0) {
+    setError("Please add at least one symptom before predicting.");
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+  setResults(null);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symptoms: Array.from(selectedSymptoms) }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
     }
 
-    setLoading(true);
-    setError('');
-    setResults(null);
+    const data = await response.json();
+    setResults(data);
+  } catch (error) {
+    console.error("Prediction error:", error);
+    setError(
+      `Prediction failed: ${error.message}. Please make sure the API is running on ${API_BASE_URL}`
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
-    try {
-      // Replace this with your actual axios call:
-      // const response = await axios.post(`${API_BASE_URL}/predict`, {
-      //   symptoms: Array.from(selectedSymptoms)
-      // });
-      // setResults(response.data);
-      
-      // For demo, simulating a response
-      setTimeout(() => {
-        setResults({
-          predicted_disease: "Common Cold",
-          description: "A viral infection of the upper respiratory tract that commonly affects the nose and throat.",
-          precautions: ["Get plenty of rest", "Stay hydrated", "Avoid close contact with others", "Cover mouth when coughing"],
-          medications: ["Paracetamol for fever", "Throat lozenges", "Nasal decongestant"],
-          diet: ["Warm liquids", "Vitamin C rich foods", "Light, easy to digest meals"],
-          workout: ["Light walking", "Gentle stretching", "Avoid intense exercise"]
-        });
-        setLoading(false);
-      }, 2000);
-      return;
-    } catch (error) {
-      console.error('Prediction error:', error);
-      setError(`Prediction failed: ${error.response?.data?.detail || error.message}. Please make sure the API server is running on ${API_BASE_URL}`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const commonSymptoms = [
     'headache', 'fever', 'cough', 'fatigue', 'nausea', 'vomiting',
