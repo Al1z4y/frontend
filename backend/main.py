@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 import pickle
 import uvicorn
-
+import os
+import joblib
 # Create FastAPI app
 app = FastAPI(
     title="Medicine Management System API",
@@ -15,35 +16,42 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Add CORS middleware
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React development server
+    allow_origins=[
+        "http://localhost:3000",                 # local dev
+        "https://disease-predictor-omega.vercel.app"  # your deployed frontend
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-
-# Load datasets
-try:
-    sym_des = pd.read_csv("datasets/symtoms_df.csv")
-    precautions = pd.read_csv("datasets/precautions_df.csv")
-    workout = pd.read_csv("datasets/workout_df.csv")
-    description = pd.read_csv("datasets/description.csv")
-    medications = pd.read_csv('datasets/medications.csv')
-    diets = pd.read_csv("datasets/diets.csv")
-except FileNotFoundError as e:
-    print(f"Error loading datasets: {e}")
-    print("Please ensure all dataset files are in the 'datasets/' directory")
+# Base directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Load model
+MODEL_PATH = os.path.join(BASE_DIR, "models", "svc.pkl")
 try:
-    svc = pickle.load(open('svc.pkl', 'rb'))
+    svc = joblib.load(MODEL_PATH)
+    print(f"✅ Model loaded successfully from {MODEL_PATH}")
 except FileNotFoundError:
-    print("Error: Model file 'models/svc.pkl' not found")
+    print("❌ Error: Model file 'svc.pkl' not found in models folder")
     svc = None
+
+# Load datasets
+DATASET_DIR = os.path.join(BASE_DIR, "datasets")
+try:
+    sym_des = pd.read_csv(os.path.join(DATASET_DIR, "symtoms_df.csv"))
+    precautions = pd.read_csv(os.path.join(DATASET_DIR, "precautions_df.csv"))
+    workout = pd.read_csv(os.path.join(DATASET_DIR, "workout_df.csv"))
+    description = pd.read_csv(os.path.join(DATASET_DIR, "description.csv"))
+    medications = pd.read_csv(os.path.join(DATASET_DIR, "medications.csv"))
+    diets = pd.read_csv(os.path.join(DATASET_DIR, "diets.csv"))
+    print("✅ Datasets loaded successfully")
+except FileNotFoundError as e:
+    print(f"❌ Error loading datasets: {e}")
 
 # Pydantic models for request/response
 class SymptomsRequest(BaseModel):
