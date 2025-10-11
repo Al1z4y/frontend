@@ -436,7 +436,7 @@ function App() {
             <span>MedCare AI</span>
           </div>
           <div className="footer-text">
-            <p>Powered by Advanced Medical AI • Trusted by Healthcare Professionals</p>
+            <p>Powered by Advanced Medical AI • Trusted by Healthcare Professionals • By Alizay Nasir </p>
           </div>
         </div>
       </div>
